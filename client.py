@@ -1,21 +1,41 @@
 import socket
+import threading
+import sys
 
-SERVER = "10.248.0.146"
+HOST = "SERVERIP"
 PORT = 12345
-FORMAT = 'utf-8'
-ADDR = (SERVER,PORT)
+ADDR = (HOST,PORT)
 HEADER = 128
+DISCONNECT_MSG = "!DISC"
+FORMAT = 'utf-8'
 
-client = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 client.connect(ADDR)
 
-def sendData(msg):
-    msg = msg.encode(FORMAT)
-    messageLength = len(msg)
-    send_length = str(messageLength).encode(FORMAT)
-    send_length += b' ' * (HEADER - len(send_length))
-    client.send(send_length)
-    client.send(msg)
+def sendData():
+    while True:
+        message = input().encode(FORMAT)
+        if message != DISCONNECT_MSG and message != '':
+            msgLength = len(message)
+            sendLength = str(msgLength).encode(FORMAT)
+            sendLength += b' ' * (HEADER-len(sendLength))
+            client.send(sendLength)
+            client.send(message)
+        elif message == DISCONNECT_MSG:
+            SystemExit()
 
-while True:
-    sendData(input())
+def receiveData():
+    while True:
+        messageLength = client.recv(HEADER).decode(FORMAT)
+        if messageLength:
+            messageLength = len(messageLength)
+            message = client.recv(messageLength).decode(FORMAT)
+            print(f"Client: {message}")
+
+def start():
+    sendThread = threading.Thread(target = sendData)
+    receiveThread = threading.Thread(target = receiveData)
+    sendThread.start()
+    receiveThread.start()
+
+start()        
